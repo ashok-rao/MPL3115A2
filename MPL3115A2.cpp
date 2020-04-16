@@ -45,12 +45,12 @@
 *   Data Ready -- MPL3115A2_Int2.fall --- DataReady_IRQ --- MPL3115A2_usr2_fptr
 *
 */
-void (*MPL3115A2_usr2_fptr)(void);               // Pointers to user function called after
-void (*MPL3115A2_usr1_fptr)(void);               // IRQ assertion.
+//void (*MPL3115A2_usr2_fptr)(void);               // Pointers to user function called after
+//void (*MPL3115A2_usr1_fptr)(void);               // IRQ assertion.
  
 //
-InterruptIn MPL3115A2_Int1( PTD4);       // INT1
-InterruptIn MPL3115A2_Int2( PTA12);      // INT2
+//InterruptIn MPL3115A2_Int1( PTD4);       // INT1
+//InterruptIn MPL3115A2_Int2( PTA12);      // INT2
  
 MPL3115A2::MPL3115A2(PinName sda, PinName scl, int addr) : m_i2c(sda, scl), m_addr(addr) {
     unsigned char data[6];
@@ -58,10 +58,10 @@ MPL3115A2::MPL3115A2(PinName sda, PinName scl, int addr) : m_i2c(sda, scl), m_ad
     MPL3115A2_mode = BAROMETRIC_MODE;
     MPL3115A2_oversampling = OVERSAMPLE_RATIO_1;
     //
-    MPL3115A2_usr1_fptr = NULL;
-    MPL3115A2_usr2_fptr = NULL;
-    MPL3115A2_Int1.fall( NULL);
-    MPL3115A2_Int2.fall( NULL);
+//    MPL3115A2_usr1_fptr = NULL;
+//    MPL3115A2_usr2_fptr = NULL;
+//    MPL3115A2_Int1.fall( NULL);
+//    MPL3115A2_Int2.fall( NULL);
     
     Reset();
     
@@ -123,8 +123,8 @@ void MPL3115A2::DataReady( void(*fptr)(void), unsigned char OS)
     data[1] |= 0x01; 
     writeRegs(data, 2);    
  
-    MPL3115A2_usr2_fptr = fptr;
-    MPL3115A2_Int2.fall( this, &MPL3115A2::DataReady_IRQ);
+//    MPL3115A2_usr2_fptr = fptr;
+//    MPL3115A2_Int2.fall( this, &MPL3115A2::DataReady_IRQ);
  
 }
  
@@ -133,7 +133,7 @@ void MPL3115A2::DataReady_IRQ( void)
     // Clear the IRQ flag
     getStatus();
     // Run the user supplied function
-    MPL3115A2_usr2_fptr();   
+//    MPL3115A2_usr2_fptr();   
 }
  
 void MPL3115A2::AltitudeTrigger( void(*fptr)(void), unsigned short level)
@@ -179,8 +179,8 @@ void MPL3115A2::AltitudeTrigger( void(*fptr)(void), unsigned short level)
     data[1] = 0x81 | (MPL3115A2_oversampling<<3);    
     writeRegs(data, 2);    
  
-    MPL3115A2_usr1_fptr = fptr;
-    MPL3115A2_Int1.fall( this, &MPL3115A2::AltitudeTrg_IRQ);
+//    MPL3115A2_usr1_fptr = fptr;
+//    MPL3115A2_Int1.fall( this, &MPL3115A2::AltitudeTrg_IRQ);
  
 }
  
@@ -189,7 +189,7 @@ void MPL3115A2::AltitudeTrg_IRQ( void)
     // Clear the IRQ flag
     getStatus();
     // Run the user supplied function
-    MPL3115A2_usr1_fptr();   
+//    MPL3115A2_usr1_fptr();   
  
 }
  
@@ -317,12 +317,12 @@ unsigned int MPL3115A2::getAllData( float *f)
 {
     if ( isDataAvailable() & PTDR_STATUS) {
         if ( MPL3115A2_mode == ALTIMETER_MODE) {
-            f[0] = getAltimeter( REG_ALTIMETER_MSB);
+  //          f[0] = getAltimeter( REG_ALTIMETER_MSB);
         } else {
             f[0] = getPressure( REG_PRESSURE_MSB);
         }
         
-        f[1] = getTemperature( REG_TEMP_MSB);
+  //      f[1] = getTemperature( REG_TEMP_MSB);
         //
         return 1;
     } else
@@ -440,7 +440,7 @@ float MPL3115A2::getPressure( unsigned char reg)
         fprs = (float)prs * 1.0f;
     }
  
-    if ( dt[2] & 0x10)              // I did some experiment to set the fractional parte.
+    if ( dt[2] & 0x10)              // Author did some experiment to set the fractional parte.
         fprs += 0.25f;              // ** Warning: the DS is wrong! **
     if ( dt[2] & 0x20)
         fprs += 0.5f;
