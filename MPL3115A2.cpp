@@ -2,6 +2,8 @@
  
 #define REG_WHO_AM_I        0x0C        // return 0xC4 by default
 #define REG_STATUS          0x00
+//#define REG_STATUS          0x01        //F_STATUS
+
 #define REG_CTRL_REG_1      0x26
 #define REG_CTRL_REG_3      0x28
 #define REG_CTRL_REG_4      0x29
@@ -24,6 +26,9 @@
 #define REG_PRES_DELTA_MSB  0x07
 #define REG_ALTI_DELTA_MSB  0x07
 #define REG_TEMP_DELTA_MSB  0x0a
+
+#define F_DATA              0x0E
+#define F_STATUS            0x0F
  
  
 #define UINT14_MAX        16383
@@ -68,6 +73,25 @@ MPL3115A2::MPL3115A2(PinName sda, PinName scl, int addr) : m_i2c(sda, scl), m_ad
     data[0]=REG_PRES_MIN_MSB;
     data[1]=0;data[2]=0;data[3]=0;data[4]=0;data[5]=0;
     writeRegs( &data[0], 6);
+//Ashok
+data[0] = REG_CTRL_REG_1;
+data[1] = 0x38;
+ writeRegs(data, 2);
+data[0] = REG_PT_DATA_CFG;
+data[1] = 0x06;
+ writeRegs(data, 2);
+data[0] = REG_CTRL_REG_1;
+data[1] = 0x39;
+ writeRegs(data, 2);
+
+//Ashok
+/*
+    wait(0.1);
+    data[0]=F_STATUS;
+    data[1]=0;data[2]=0;data[3]=0;data[4]=0;data[5]=0;data[6]=1;data[7]=0;
+    writeRegs( &data[0], 8);
+    wait(0.1);
+*/
 }
  
 void MPL3115A2::Reset( void)
@@ -94,21 +118,30 @@ void MPL3115A2::DataReady( void(*fptr)(void), unsigned char OS)
     
     // Clear all interrupts by reading the output registers.
     readRegs( REG_ALTIMETER_MSB, &dt[0], 5);
-    getStatus();
+//    getStatus();
+//Ashok
+//    getStatus();
+
     // Configure INT active low and pullup
     data[0] = REG_CTRL_REG_3;
     data[1] = 0x00;
     writeRegs(data, 2);    
     // Enable Interrupt fot data ready
     data[0] = REG_CTRL_REG_4;
-    data[1] = 0x80;
+//    data[1] = 0x80;
+//Ashok
+    data[1] = 0x00;
+
     writeRegs(data, 2);    
     // Configure Interrupt to route to INT2
     data[0] = REG_CTRL_REG_5;
     data[1] = 0x00;
     writeRegs(data, 2);    
     data[0] = REG_PT_DATA_CFG;
-    data[1] = 0x07;
+//    data[1] = 0x07;
+//Ashok
+    data[1] = 0x00;
+
     writeRegs(data, 2);    
  
     // Configure the OverSampling rate, Altimeter/Barometer mode and set the sensor Active
@@ -212,7 +245,9 @@ void MPL3115A2::Barometric_Mode( void)
     writeRegs(data, 2);    
  
     data[0] = REG_PT_DATA_CFG;
-    data[1] = 0x07;
+//    data[1] = 0x07;
+//Ashok
+    data[1] = 0x00;
     writeRegs(data, 2);    
  
     Oversample_Ratio( MPL3115A2_oversampling);
@@ -299,10 +334,13 @@ unsigned int MPL3115A2::isDataAvailable( void)
 {
     unsigned char status;
     
-    readRegs( REG_STATUS, &status, 1);
+    //readRegs( REG_STATUS, &status, 1);
+//Ashok
+printf("inside....");
+    readRegs( F_DATA, &status, 1);
  
-    return ((status>>1));
-    
+   // return ((status>>1));
+        return ((status));
 }
  
 unsigned char MPL3115A2::getStatus( void)
@@ -317,12 +355,12 @@ unsigned int MPL3115A2::getAllData( float *f)
 {
     if ( isDataAvailable() & PTDR_STATUS) {
         if ( MPL3115A2_mode == ALTIMETER_MODE) {
-  //          f[0] = getAltimeter( REG_ALTIMETER_MSB);
+            f[0] = getAltimeter( REG_ALTIMETER_MSB);
         } else {
             f[0] = getPressure( REG_PRESSURE_MSB);
         }
         
-  //      f[1] = getTemperature( REG_TEMP_MSB);
+        f[1] = getTemperature( REG_TEMP_MSB);
         //
         return 1;
     } else
@@ -408,7 +446,7 @@ float MPL3115A2::getAltimeter( unsigned char reg)
 float MPL3115A2::getPressure( void)
 {
     float a;
-    
+    printf("inside 1....");
     a = getPressure( REG_PRESSURE_MSB);
     return a;
 }
@@ -419,7 +457,12 @@ float MPL3115A2::getPressure( unsigned char reg)
     unsigned int prs;
     int tmp;
     float fprs;
-    
+printf("inside2....");
+do
+{
+  readRegs(0, &dt[0], 1);
+} while((dt[0] & 0x04) == 0x00);
+
     /*
     * dt[0] = Bits 12-19 of 20-bit real-time Pressure sample. (b7-b0)
     * dt[1] = Bits 4-11 of 20-bit real-time Pressure sample. (b7-b0)
