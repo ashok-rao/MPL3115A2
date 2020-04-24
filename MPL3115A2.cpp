@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 ARM Limited. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ * Licensed under the Apache License, Version 2.0 (the License); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an AS IS BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "MPL3115A2.h"
  
 #define REG_WHO_AM_I        0x0C        // return 0xC4 by default
@@ -73,25 +89,18 @@ MPL3115A2::MPL3115A2(PinName sda, PinName scl, int addr) : m_i2c(sda, scl), m_ad
     data[0]=REG_PRES_MIN_MSB;
     data[1]=0;data[2]=0;data[3]=0;data[4]=0;data[5]=0;
     writeRegs( &data[0], 6);
-//Ashok
-data[0] = REG_CTRL_REG_1;
-data[1] = 0x38;
- writeRegs(data, 2);
-data[0] = REG_PT_DATA_CFG;
-data[1] = 0x06;
- writeRegs(data, 2);
-data[0] = REG_CTRL_REG_1;
-data[1] = 0x39;
- writeRegs(data, 2);
 
-//Ashok
-/*
-    wait(0.1);
-    data[0]=F_STATUS;
-    data[1]=0;data[2]=0;data[3]=0;data[4]=0;data[5]=0;data[6]=1;data[7]=0;
-    writeRegs( &data[0], 8);
-    wait(0.1);
-*/
+    //Configure for Polling mode with only barometer enabled.
+    data[0] = REG_CTRL_REG_1;
+    data[1] = 0x38;
+    writeRegs(data, 2);
+    data[0] = REG_PT_DATA_CFG;
+    data[1] = 0x06;
+    writeRegs(data, 2);
+    data[0] = REG_CTRL_REG_1;
+    data[1] = 0x39;
+    writeRegs(data, 2);
+
 }
  
 void MPL3115A2::Reset( void)
@@ -118,9 +127,7 @@ void MPL3115A2::DataReady( void(*fptr)(void), unsigned char OS)
     
     // Clear all interrupts by reading the output registers.
     readRegs( REG_ALTIMETER_MSB, &dt[0], 5);
-//    getStatus();
-//Ashok
-//    getStatus();
+    getStatus();
 
     // Configure INT active low and pullup
     data[0] = REG_CTRL_REG_3;
@@ -128,20 +135,14 @@ void MPL3115A2::DataReady( void(*fptr)(void), unsigned char OS)
     writeRegs(data, 2);    
     // Enable Interrupt fot data ready
     data[0] = REG_CTRL_REG_4;
-//    data[1] = 0x80;
-//Ashok
-    data[1] = 0x00;
-
+    data[1] = 0x80;
     writeRegs(data, 2);    
     // Configure Interrupt to route to INT2
     data[0] = REG_CTRL_REG_5;
     data[1] = 0x00;
     writeRegs(data, 2);    
     data[0] = REG_PT_DATA_CFG;
-//    data[1] = 0x07;
-//Ashok
-    data[1] = 0x00;
-
+    data[1] = 0x07;
     writeRegs(data, 2);    
  
     // Configure the OverSampling rate, Altimeter/Barometer mode and set the sensor Active
@@ -245,9 +246,8 @@ void MPL3115A2::Barometric_Mode( void)
     writeRegs(data, 2);    
  
     data[0] = REG_PT_DATA_CFG;
-//    data[1] = 0x07;
-//Ashok
-    data[1] = 0x00;
+    data[1] = 0x07;
+//    data[1] = 0x06;
     writeRegs(data, 2);    
  
     Oversample_Ratio( MPL3115A2_oversampling);
@@ -334,13 +334,12 @@ unsigned int MPL3115A2::isDataAvailable( void)
 {
     unsigned char status;
     
-    //readRegs( REG_STATUS, &status, 1);
-//Ashok
-printf("inside....");
-    readRegs( F_DATA, &status, 1);
+    readRegs( REG_STATUS, &status, 1);
+    //printf("inside....");
+    //readRegs( F_DATA, &status, 1);
  
-   // return ((status>>1));
-        return ((status));
+    return ((status>>1));
+//      return ((status));
 }
  
 unsigned char MPL3115A2::getStatus( void)
@@ -446,7 +445,7 @@ float MPL3115A2::getAltimeter( unsigned char reg)
 float MPL3115A2::getPressure( void)
 {
     float a;
-    printf("inside 1....");
+//    printf("inside 1....");
     a = getPressure( REG_PRESSURE_MSB);
     return a;
 }
@@ -457,11 +456,11 @@ float MPL3115A2::getPressure( unsigned char reg)
     unsigned int prs;
     int tmp;
     float fprs;
-printf("inside2....");
-do
-{
-  readRegs(0, &dt[0], 1);
-} while((dt[0] & 0x04) == 0x00);
+    //printf("inside2....");
+    do
+    {
+      readRegs(0, &dt[0], 1);
+    } while((dt[0] & 0x04) == 0x00);
 
     /*
     * dt[0] = Bits 12-19 of 20-bit real-time Pressure sample. (b7-b0)
